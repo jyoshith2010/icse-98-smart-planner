@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="manifest" href="manifest.json">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ICSE Class X – 98% Smart Planner</title>
+<meta name="theme-color" content="#0b132b" />
+<style>
+:root{
+ --bg:#0b132b;--card:#1c2541;--accent:#ffd369;--text:#f5f5f5;--muted:#cfd8ff
+}
+.light{
+ --bg:#f5f7ff;--card:#ffffff;--accent:#3a86ff;--text:#111;--muted:#444
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui;background:var(--bg);color:var(--text)}
+header{padding:14px;background:var(--card);text-align:center;position:sticky;top:0;z-index:10}
+nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px}
+button{border:none;border-radius:20px;padding:8px 14px;background:var(--accent);color:#000;font-weight:600;cursor:pointer}
+.container{max-width:1200px;margin:auto;padding:12px}
+.card{background:var(--card);border-radius:18px;padding:16px;margin-bottom:18px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+ul{list-style:none;padding:0;margin:0}
+li{margin:6px 0}
+.subjects{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.subject h3{margin:0;cursor:pointer;display:flex;justify-content:space-between}
+.progress{height:8px;background:#0003;border-radius:10px;overflow:hidden;margin-top:6px}
+.progress span{display:block;height:100%;background:var(--accent)}
+.analytics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.analytics-card{background:linear-gradient(135deg,var(--card),#0002);padding:14px;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.analytics-card h4{margin:0 0 8px;font-size:1rem}
+.analytics-card .progress{margin-top:10px}
+.exam-timeline{display:grid;gap:14px}
+.exam-card{padding:14px;border-radius:16px;background:linear-gradient(135deg,var(--card),#0003);box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.exam-card.model{border-left:5px solid #4cc9f0}
+.exam-card.board{border-left:5px solid var(--accent)}
+.exam-card small{color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+<h2>ICSE Class X – 98% Smart Planner</h2>
+<nav>
+<button onclick="show('today')">Today</button>
+<button onclick="show('timetable')">Timetable</button>
+<button onclick="show('subjects')">Subjects</button>
+<button onclick="show('analytics')">Analytics</button>
+<button onclick="show('exams')">Exams</button>
+<button onclick="toggleTheme()">🌙 / ☀️</button>
+</nav>
+</header>
+
+<div class="container">
+<section id="today" class="card"><h3>Today Focus <span id="countdownBadge" style="font-size:14px;margin-left:8px;color:var(--accent)"></span></h3><p id="todayText"></p></section>
+<section id="timetable" class="card" style="display:none"><h3>Day-by-Day Plan</h3><ul id="daily"></ul></section>
+<section id="subjects" class="card" style="display:none"><h3>Syllabus Checklist</h3><div id="subjectBox" class="subjects"></div></section>
+<section id="analytics" class="card" style="display:none"><h3>📊 Subject-wise Analytics</h3><div id="analyticsBox" class="analytics-grid"></div></section>
+<section id="exams" class="card" style="display:none"><h3>📝 Exams Timeline</h3><div id="examList" class="exam-timeline"></div></section>
+</div>
+
+<script>
+/* ================= DATA (UNCHANGED) ================= */
+const exams=[
+ {s:'English Language',d:'2026-02-17'},
+ {s:'English Literature',d:'2026-02-20'},
+ {s:'Hindi',d:'2026-02-26'},
+ {s:'Mathematics',d:'2026-03-02'},
+ {s:'Physics',d:'2026-03-09'},
+ {s:'Chemistry',d:'2026-03-11'},
+ {s:'Biology',d:'2026-03-13'},
+ {s:'History & Civics',d:'2026-03-16'},
+ {s:'Geography',d:'2026-03-18'},
+ {s:'Physical Education',d:'2026-03-23'}
+];
+const modelExams=[
+ {s:'Biology',d:'2026-01-03'},
+ {s:'Mathematics',d:'2026-01-05'},
+ {s:'English Literature',d:'2026-01-06'},
+ {s:'Geography',d:'2026-01-07'},
+ {s:'Physics',d:'2026-01-08'},
+ {s:'History & Civics',d:'2026-01-09'},
+ {s:'Chemistry',d:'2026-01-12'},
+ {s:'Physical Education',d:'2026-01-13'},
+ {s:'English Language',d:'2026-01-15'},
+ {s:'Hindi',d:'2026-01-16'}
+];
+const syllabus={
+ 'Mathematics':['GST','Banking','Shares','Linear Inequations','Quadratic Equations','Ratio','Factorisation','Matrices','AP','GP','Reflection','Section & Midpoint','Equation of Line','Similarity','Loci','Circles','Tangent & Secant','Constructions','Cylinder Cone Sphere','Trig Identities','Heights & Distances','Statistics','Graphs','Probability'],
+ 'Physics':['Force','Work Power Energy','Machines','Light','Sound','Electricity','Magnetism','Calorimetry','Radioactivity'],
+ 'Chemistry':['Periodic Properties','Chemical Bonding','Acids Bases Salts','Analytical Chemistry','Mole Concept & Stoichiometry','Electrolysis','Metallurgy','HCl','Ammonia','Nitric Acid','Sulphuric Acid','Organic Chemistry','Practical Chemistry'],
+ 'Biology':['Cell Division','Genetics','Absorption','Transpiration','Photosynthesis','Plant Hormones','Circulatory','Excretory','Nervous','Endocrine','Sense Organs','Reproduction','Population','Pollution','Human Evolution'],
+ 'History & Civics':['Indian National Movement','Mass Phase','World War I','Dictatorships','World War II','United Nations','NAM','Union Legislature','President','Prime Minister','Supreme Court','High Courts'],
+ 'Geography':['Climate','Soils','Vegetation','Water Resources','Minerals','Agriculture','Industries','Transport','Waste','Topo Maps','India Map'],
+ 'English Language':['Essay','Letter','Comprehension','Notice & Email','Grammar'],
+ 'English Literature':['Julius Caesar','Prose','Poetry'],
+ 'Hindi':['Ekanki Sanchay','Sahitya Sagar','Grammar'],
+ 'Physical Education':['Growth','Body Types','Fitness','Training','Safety','Health','Diet','Careers','Cricket','Football']
+};
+
+/* ================= NAV & THEME ================= */
+function show(id){document.querySelectorAll('section').forEach(s=>s.style.display='none');document.getElementById(id).style.display='block'}
+function toggleTheme(){document.body.classList.toggle('light');localStorage.theme=document.body.className}
+if(localStorage.theme)document.body.className=localStorage.theme
+
+/* ================= EXAM LOGIC ================= */
+const allExams=[...modelExams.map(e=>({...e,type:'Model'})),...exams.map(e=>({...e,type:'Board'}))].sort((a,b)=>new Date(a.d)-new Date(b.d))
+function nextExam(){return allExams.find(e=>new Date(e.d)>=new Date())}
+
+const ne=nextExam();
+if(ne){
+ const days=Math.ceil((new Date(ne.d)-new Date())/86400000);
+ document.getElementById('todayText').innerText=`Next Exam: ${ne.s} (${ne.type}) on ${new Date(ne.d).toDateString()}`;
+ document.getElementById('countdownBadge').innerText=`⏳ ${days} day(s) left`;
+}{const days=Math.ceil((new Date(ne.d)-new Date())/86400000);document.getElementById('todayText').innerText=`Next Exam: ${ne.s} (${ne.type}) in ${days} day(s)`}
+
+/* ================= SMART TIMETABLE ================= */
+const daily=document.getElementById('daily');
+for(let d=new Date(); d<=new Date('2026-03-23'); d.setDate(d.getDate()+1)){
+ const li=document.createElement('li');
+ const ds=d.toISOString().slice(0,10);
+ const ex=allExams.find(e=>e.d===ds);
+ if(ex){li.innerHTML=`<b>${d.toDateString()}</b> – EXAM: ${ex.s} (light revision)`}
+ else{
+  const upcoming=allExams.filter(e=>new Date(e.d)>d)[0];
+  li.innerHTML=`<b>${d.toDateString()}</b><br>🌅 Morning: ${upcoming?upcoming.s:'Mathematics'}<br>📘 Afternoon: Mathematics<br>⚗️ Evening: Physics / Chemistry<br>🌙 Night: Bio / Hindi / Geo / History (English only if exam near)`
+ }
+ daily.appendChild(li);
+}
+
+/* ================= SUBJECTS ================= */
+const box=document.getElementById('subjectBox');
+Object.keys(syllabus).forEach(sub=>{
+ const div=document.createElement('div');div.className='card subject';
+ const h=document.createElement('h3');h.innerHTML=`${sub} <small>(${syllabus[sub].length})</small>`;
+ const ul=document.createElement('ul');ul.style.display='none';
+ h.onclick=()=>ul.style.display=ul.style.display==='none'?'block':'none';
+ syllabus[sub].forEach(ch=>{
+  const id=sub+'-'+ch;
+  const li=document.createElement('li');
+  li.innerHTML=`<label><input type='checkbox' id='${id}'> ${ch}</label>`;
+  const cb=li.querySelector('input');cb.checked=localStorage[id]==='1';
+  cb.onchange=()=>{localStorage[id]=cb.checked?'1':'0';updateAnalytics()};
+  ul.appendChild(li);
+ });
+ const prog=document.createElement('div');prog.className='progress';prog.innerHTML='<span></span>';
+ div.append(h,prog,ul);box.appendChild(div);
+});
+
+/* ================= ANALYTICS ================= */
+function updateAnalytics(){
+ const a=document.getElementById('analyticsBox');
+ a.innerHTML='';
+ document.querySelectorAll('.subject').forEach(card=>{
+  const sub=card.querySelector('h3').innerText.split('(')[0].trim();
+  let done=0;
+  syllabus[sub].forEach(ch=>{if(localStorage[sub+'-'+ch]==='1')done++});
+  const pct=Math.round(done/syllabus[sub].length*100);
+  card.querySelector('.progress span').style.width=pct+'%';
+  a.innerHTML+=`<div class="analytics-card"><h4>${sub}</h4><div class="progress"><span style="width:${pct}%"></span></div><small>${done}/${syllabus[sub].length} chapters • ${pct}%</small></div>`;
+ });
+}
+updateAnalytics();
+
+/* ================= EXAMS LIST ================= */
+const el=document.getElementById('examList');
+el.innerHTML='';
+el.innerHTML+='<div><b>MODEL EXAMS</b></div>';
+modelExams.forEach(e=>{
+ el.innerHTML+=`<div class="exam-card model"><b>${e.s}</b><br><small>${new Date(e.d).toDateString()}</small></div>`;
+});
+el.innerHTML+='<div style="margin-top:10px"><b>BOARD EXAMS</b></div>';
+exams.forEach(e=>{
+ el.innerHTML+=`<div class="exam-card board"><b>${e.s}</b><br><small>${new Date(e.d).toDateString()}</small></div>`;
+});
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js");
+}
+</script>
+
+</body>
+</html>
